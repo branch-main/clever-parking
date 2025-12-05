@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clever Parking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'DM Sans', system-ui, sans-serif; }
+        
+        :root {
+            --bg-primary: #0c0c0f;
+            --bg-card: #16161a;
+            --bg-card-inner: #1a1a1f;
+            --border-color: #232329;
+            --border-inner: #2a2a30;
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+        }
+        
+        .light {
+            --bg-primary: #f4f4f5;
+            --bg-card: #ffffff;
+            --bg-card-inner: #fafafa;
+            --border-color: #e4e4e7;
+            --border-inner: #e4e4e7;
+            --text-primary: #18181b;
+            --text-secondary: #52525b;
+            --text-muted: #a1a1aa;
+        }
+        
+        body { 
+            background: var(--bg-primary); 
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            transition: background 0.3s, border-color 0.3s;
+        }
+        
+        .card-inner {
+            background: var(--bg-card-inner);
+            border: 1px solid var(--border-inner);
+            transition: background 0.3s, border-color 0.3s;
+        }
+        
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .text-muted { color: var(--text-muted); }
+        
+        .btn-primary {
+            background: #2563eb;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background: #1d4ed8; }
+        
+        .btn-secondary {
+            background: var(--bg-card-inner);
+            border: 1px solid var(--border-inner);
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover { opacity: 0.8; }
+        
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: #ef4444;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-card-inner); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-inner); border-radius: 3px; }
+        
+        .icon-box {
+            background: var(--bg-card-inner);
+            transition: background 0.3s;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 py-6">
+        <header class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-primary">Clever Parking</h1>
+                <p class="text-base text-muted">Sistema de monitoreo</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleTheme()" id="theme-btn" class="btn-secondary p-2 rounded-lg" title="Cambiar tema">
+                    <svg id="theme-icon" class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                </button>
+                <div class="flex items-center gap-2 text-sm text-muted">
+                    <div class="live-dot"></div>
+                    <span>En vivo</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Control -->
+        <div class="card rounded-lg p-5 mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <div id="flash-glow" class="absolute inset-0 rounded-xl bg-amber-500/0 blur-md transition-all duration-300"></div>
+                        <div id="flash-icon" class="relative w-14 h-14 rounded-xl icon-box flex items-center justify-center transition-all duration-300">
+                            <svg class="w-7 h-7 text-muted transition-colors duration-300" id="flash-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-base font-medium text-primary">Flash LED</span>
+                        <p id="flash-status" class="text-sm text-muted">Apagado</p>
+                    </div>
+                </div>
+                <button id="toggle-flash" class="btn-primary px-5 py-2.5 rounded-lg text-base font-medium text-white" onclick="toggleFlash()">
+                    <span id="button-text">Encender</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid lg:grid-cols-2 gap-6">
+            <!-- Parking Slots -->
+            <div class="card rounded-lg p-5">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-xl font-semibold text-primary">Espacios</h2>
+                    <div class="flex gap-4 text-sm">
+                        <span class="text-green-500"><span id="free-count" class="font-bold">0</span> libres</span>
+                        <span class="text-red-500"><span id="occupied-count" class="font-bold">0</span> ocupados</span>
+                    </div>
+                </div>
+                <div id="parking-slots" class="space-y-2"></div>
+            </div>
+
+            <!-- Camera Feed -->
+            <div class="card rounded-lg p-5">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-xl font-semibold text-primary">Cámara</h2>
+                    <button onclick="toggleLabels()" id="toggle-labels-btn" class="text-sm font-medium text-muted hover:text-secondary transition-colors">
+                        Mostrar etiquetas
+                    </button>
+                </div>
+                <div class="relative">
+                    <div id="camera-placeholder" class="aspect-[4/3] card-inner rounded-lg flex items-center justify-center">
+                        <div class="text-center text-muted">
+                            <svg class="w-14 h-14 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <p class="text-base">Esperando señal...</p>
+                        </div>
+                    </div>
+                    <img id="camera-feed" class="hidden w-full aspect-[4/3] object-cover rounded-lg" />
+                </div>
+                <p class="text-sm text-muted mt-3" id="last-update">Actualizado: --</p>
+            </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="card rounded-lg p-5 mt-6">
+            <div class="flex items-center justify-between mb-5">
+                <h2 class="text-xl font-semibold text-primary">Eventos</h2>
+                <button onclick="clearActivityLog()" class="text-sm font-medium text-muted hover:text-secondary transition-colors">
+                    Limpiar
+                </button>
+            </div>
+            <div id="activity-log" class="space-y-2 max-h-56 overflow-y-auto custom-scrollbar">
+                <p class="text-base text-muted py-4 text-center">Sin actividad</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let flashEnabled = false;
+        let activityLog = [];
+        let showLabels = false;
+        let darkMode = true;
+
+        function toggleTheme() {
+            darkMode = !darkMode;
+            document.body.classList.toggle('light', !darkMode);
+            const icon = document.getElementById('theme-icon');
+            if (darkMode) {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>';
+            } else {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>';
+            }
+        }
+
+        function updateFlashUI() {
+            const button = document.getElementById('toggle-flash');
+            const buttonText = document.getElementById('button-text');
+            const icon = document.getElementById('flash-icon');
+            const glow = document.getElementById('flash-glow');
+            const status = document.getElementById('flash-status');
+            const flashSvg = document.getElementById('flash-svg');
+
+            if (flashEnabled) {
+                buttonText.textContent = 'Apagar';
+                button.className = 'btn-secondary px-5 py-2.5 rounded-lg text-base font-medium text-secondary';
+                icon.className = 'relative w-14 h-14 rounded-xl bg-amber-500 flex items-center justify-center transition-all duration-300';
+                glow.className = 'absolute inset-0 rounded-xl bg-amber-500/40 blur-md transition-all duration-300';
+                flashSvg.className = 'w-7 h-7 text-amber-900 transition-colors duration-300';
+                status.textContent = 'Encendido';
+                status.className = 'text-sm text-amber-500';
+            } else {
+                buttonText.textContent = 'Encender';
+                button.className = 'btn-primary px-5 py-2.5 rounded-lg text-base font-medium text-white';
+                icon.className = 'relative w-14 h-14 rounded-xl icon-box flex items-center justify-center transition-all duration-300';
+                glow.className = 'absolute inset-0 rounded-xl bg-amber-500/0 blur-md transition-all duration-300';
+                flashSvg.className = 'w-7 h-7 text-muted transition-colors duration-300';
+                status.textContent = 'Apagado';
+                status.className = 'text-sm text-muted';
+            }
+        }
+
+        async function toggleFlash() {
+            const button = document.getElementById('toggle-flash');
+            button.disabled = true;
+            try {
+                const response = await fetch('/flash/toggle', {method: 'POST', headers: {'Content-Type': 'application/json'}});
+                if (response.ok) {
+                    const data = await response.json();
+                    flashEnabled = data.flash;
+                    updateFlashUI();
+                    addToActivityLog(`Flash ${flashEnabled ? 'encendido' : 'apagado'}`);
+                } else {
+                    addToActivityLog('Error al cambiar flash');
+                }
+            } catch (error) {
+                addToActivityLog('Error de conexión');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        let previousSlots = [];
+
+        function updateParkingSlots(slots) {
+            const container = document.getElementById('parking-slots');
+            const freeCount = slots.filter(s => s === 'L').length;
+            const occupiedCount = slots.filter(s => s === 'O').length;
+
+            // Detectar cambios de estado
+            if (previousSlots.length > 0) {
+                slots.forEach((slot, index) => {
+                    const prev = previousSlots[index];
+                    if (prev && prev !== slot && prev !== '?' && slot !== '?') {
+                        const estado = slot === 'L' ? 'liberado' : 'ocupado';
+                        addToActivityLog(`Espacio ${index + 1} ${estado}`);
+                    }
+                });
+            }
+            previousSlots = [...slots];
+
+            const currentSlots = Array.from(container.children).map(el => el.dataset.slot);
+            const slotsChanged = JSON.stringify(currentSlots) !== JSON.stringify(slots);
+
+            if (!slotsChanged && container.children.length > 0) return;
+
+            container.innerHTML = slots.map((slot, index) => {
+                const isFree = slot === 'L';
+                const isUnknown = slot === '?';
+                const statusText = isUnknown ? 'Escaneando...' : (isFree ? 'Disponible' : 'Ocupado');
+                const dotColor = isUnknown ? 'bg-gray-500' : (isFree ? 'bg-green-500' : 'bg-red-500');
+                const textColor = isUnknown ? 'text-muted' : (isFree ? 'text-green-500' : 'text-red-500');
+                const bgClass = isUnknown ? '' : (isFree ? 'bg-green-500/5' : 'bg-red-500/5');
+
+                return `<div class="card-inner rounded-lg px-4 py-3.5 flex items-center justify-between ${bgClass}" data-slot="${slot}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg icon-box flex items-center justify-center text-base font-bold text-secondary">${index + 1}</div>
+                        <span class="text-base text-secondary">Espacio</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-base font-medium ${textColor}">${statusText}</span>
+                        <div class="w-2.5 h-2.5 rounded-full ${dotColor} ${isUnknown ? 'animate-pulse' : ''}"></div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('free-count').textContent = freeCount;
+            document.getElementById('occupied-count').textContent = occupiedCount;
+        }
+
+        function updateCameraFeed() {
+            const img = document.getElementById('camera-feed');
+            const placeholder = document.getElementById('camera-placeholder');
+            const imageUrl = showLabels 
+                ? `/images/predictions/latest?t=${Date.now()}` 
+                : `/images/captures/latest?t=${Date.now()}`;
+
+            const tempImg = new Image();
+            tempImg.onload = function () {
+                img.src = tempImg.src;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                document.getElementById('last-update').textContent = `Actualizado: ${new Date().toLocaleTimeString('es-ES')}`;
+            };
+            
+            tempImg.onerror = function () {
+                if (showLabels) {
+                    const fallbackImg = new Image();
+                    fallbackImg.onload = function() {
+                        img.src = fallbackImg.src;
+                        img.classList.remove('hidden');
+                        placeholder.classList.add('hidden');
+                    };
+                    fallbackImg.src = `/images/captures/latest?t=${Date.now()}`;
+                }
+            };
+            
+            tempImg.src = imageUrl;
+        }
+
+        function toggleLabels() {
+            showLabels = !showLabels;
+            const btn = document.getElementById('toggle-labels-btn');
+            btn.textContent = showLabels ? 'Ocultar etiquetas' : 'Mostrar etiquetas';
+            updateCameraFeed();
+            addToActivityLog(showLabels ? 'Etiquetas activadas' : 'Etiquetas desactivadas');
+        }
+
+        function addToActivityLog(message) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'});
+            activityLog.unshift({time: timeStr, message});
+            if (activityLog.length > 15) activityLog.pop();
+
+            const container = document.getElementById('activity-log');
+            if (activityLog.length === 0) {
+                container.innerHTML = `<p class="text-base text-muted py-4 text-center">Sin actividad</p>`;
+            } else {
+                container.innerHTML = activityLog.map(entry => 
+                    `<div class="flex items-center justify-between py-2.5 px-3 rounded card-inner text-base">
+                        <span class="text-secondary">${entry.message}</span>
+                        <span class="text-muted text-sm">${entry.time}</span>
+                    </div>`
+                ).join('');
+            }
+        }
+
+        function clearActivityLog() {
+            activityLog = [];
+            document.getElementById('activity-log').innerHTML = `<p class="text-base text-muted py-4 text-center">Sin actividad</p>`;
+        }
+
+        async function pollUpdates() {
+            try {
+                const response = await fetch('/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.slots) updateParkingSlots(data.slots);
+                    updateCameraFeed();
+                    if (data.flash !== undefined && data.flash !== flashEnabled) {
+                        flashEnabled = data.flash;
+                        updateFlashUI();
+                    }
+                }
+            } catch (error) {
+                addToActivityLog('Error de conexión al servidor');
+            }
+        }
+
+        updateFlashUI();
+        updateParkingSlots(['?', '?', '?']);
+        addToActivityLog('Sistema iniciado');
+        setInterval(pollUpdates, 3000);
+        pollUpdates();
+    </script>
+</body>
+
+</html>
